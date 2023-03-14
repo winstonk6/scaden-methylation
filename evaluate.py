@@ -19,27 +19,41 @@ def df_no_na(series):
 # Remove rows containing at least one NA value from a data frame.
 def get_non_na_rows(df):
     return df[df.apply(df_no_na, axis=1)]
-    
 
+
+# Calculate correlation coefficient between each column of both data frames
 def correlation_matrix(pred, actual):
-    # Calculate correlation coefficient between each column of both data frames
     pred_mat = pred.to_numpy()
     actual_mat = actual.to_numpy()
+    notna = pd.notna(actual_mat)
     
     corrcoefmatrix = np.empty((len(pred.columns), len(actual.columns)))
     for i in range(len(pred.columns)):
         for j in range(len(actual.columns)):
-            corrcoefmatrix[i, j] = np.corrcoef(pred_mat[:,i], actual_mat[:,j])[0,1]
+            ind = notna[:,j]
+            if sum(ind) == 0:
+                corrcoefmatrix[i, j] = np.nan
+            else:
+                corrcoefmatrix[i, j] = np.corrcoef(pred_mat[:,i][ind], actual_mat[:,j][ind])[0,1]
 
     corr_mat = pd.DataFrame(corrcoefmatrix, index=pred.columns, columns=actual.columns)
     return corr_mat
 
 
+# Get max value index for each column, along with the value, and get MSE per pairing
 def corr_max_table(corr_mat, pred, actual):
-    # Get max value index for each column, along with the value.
-    # Also get MSE per pairing
+    notna = pd.notna(actual)
     idx = corr_mat.idxmax()
-    mse = [mean_squared_error(pred[f'{idx[n]}'], actual[f'{idx.index[n]}']) for n in range(len(idx))]
+    mse = []
+    for n in range(len(idx)):
+        if pd.isna(idx[n]) == True:
+            mse.append(np.nan)
+        else:
+            p_col = f'{idx[n]}'
+            a_col = f'{idx.index[n]}'
+            ind = notna[a_col]            
+            mse.append(mean_squared_error(pred[p_col][ind], actual[a_col][ind]))
+
     table = pd.DataFrame(data = {
                              'Predictions best correlated celltype': idx, 
                              'Correlation coefficient': corr_mat.max(axis=0),

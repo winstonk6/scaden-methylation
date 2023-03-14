@@ -15,6 +15,7 @@ import click
 
 @click.option('--no_eval', is_flag=True, help='Skip the evaluation of the model predictions.')
 
+@click.option("--reference", "-r", default='1', help="Number of times each cell type in the basis is sampled to generate a simulated sc-methylation dataset.")
 
 # scaden simulate
 @click.option("--out", "-o", default="./", help="Directory to store output files in")
@@ -80,7 +81,7 @@ def cli(config, no_sim, no_proc, no_pred, no_eval,
          pred, processed_path, var_cutoff, scaling, 
          train_datasets, model_dir, batch_size, learning_rate, steps, seed, 
          prediction_outname, prediction_scaling, 
-         ground_truth):
+         ground_truth, reference):
     """
     Run all scaden commands in a single program
     """
@@ -171,7 +172,8 @@ def cli(config, no_sim, no_proc, no_pred, no_eval,
                 "cells": cells, 
                 "n_samples": n_samples, 
                 "var_cutoff": var_cutoff,
-                "scaling": scaling
+                "scaling": scaling,
+                "reference": reference
             }, 
             "Model": {
                 "seed": seed, 
