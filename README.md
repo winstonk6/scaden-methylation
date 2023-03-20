@@ -22,7 +22,7 @@ Run main.py to go through the entire scaden pipeline.
 
 Each step of the scaden pipeline works the same as in the original. Each step has its own set of parameters, so the invocation can be quite long.
 
-**Pipeline controls**
+**Pipeline controls and logging**
 ```
   --config TEXT                   Name of configuration.
   --no_sim                        Skip the creation of simulated training
@@ -36,6 +36,7 @@ Each step of the scaden pipeline works the same as in the original. Each step ha
                                   training set.
   --no_eval                       Skip the evaluation of the model
                                   predictions.
+  --config TEXT                   Name of configuration.
   -r, --reference TEXT            Number of times each cell type in the basis
                                   is sampled to generate a simulated sc-
                                   methylation dataset.
