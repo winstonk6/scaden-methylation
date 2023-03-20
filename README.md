@@ -24,7 +24,6 @@ Each step of the scaden pipeline works the same as in the original. Each step ha
 
 **Pipeline controls and logging**
 ```
-  --config TEXT                   Name of configuration.
   --no_sim                        Skip the creation of simulated training
                                   samples if you have already created a
                                   training set.
