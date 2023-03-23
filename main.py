@@ -3,9 +3,7 @@ import click
 
 @click.command()
 
-# Pipeline
-@click.option('--config', default='test', help='Name of configuration.')
-
+# Pipeline controls and logging
 @click.option('--no_sim', is_flag=True, help='Skip the creation of simulated training samples if you have already created a training set.')
 
 @click.option('--no_proc', is_flag=True, 
@@ -15,7 +13,9 @@ import click
 
 @click.option('--no_eval', is_flag=True, help='Skip the evaluation of the model predictions.')
 
-@click.option("--reference", "-r", default='1', help="Number of times each cell type in the basis is sampled to generate a simulated sc-methylation dataset.")
+@click.option('--config', default='test', help='Name of configuration.')
+
+@click.option("--reference", "-r", default='1', help="Name of the scMethyl dataset.")
 
 # scaden simulate
 @click.option("--out", "-o", default="./", help="Directory to store output files in")

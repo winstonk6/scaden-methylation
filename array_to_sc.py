@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-parser = argparse.ArgumentParser(prog='Array_to_sc', description='Converts methylation array to a simulated scMethyl-seq dataset.')
+parser = argparse.ArgumentParser(prog='array_to_sc', description='Converts methylation array to a simulated scMethyl-seq dataset.')
 parser.add_argument('filename', help='Methylation array text file')
 parser.add_argument('-r', '--repeats', type=int, default=1000, help='Number of times each beta value is sampled from a binomial distribution.')
 parser.add_argument('-o', '--outname', default='./data',

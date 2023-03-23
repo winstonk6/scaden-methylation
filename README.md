@@ -13,7 +13,7 @@ Forked from the [original scaden](https://github.com/KevinMenden/scaden) made by
 - The same required packages as the original scaden (which can be downloaded [here](https://github.com/KevinMenden/scaden#installation-guide)).
 
 ## Usage
-Run main.py to go through the entire scaden pipeline.
+Run main.py to go through the entire scaden pipeline. These steps are:
 1. Simulate training data
 2. Preprocess training data
 3. Train model
@@ -21,6 +21,25 @@ Run main.py to go through the entire scaden pipeline.
 5. Evaluate predictions
 
 Each step of the scaden pipeline works the same as in the original. Each step has its own set of parameters, so the invocation can be quite long.
+
+To start the pipeline, a scMethyl-seq dataset is required. If you have a dataset, it must be formatted as explained [here](https://scaden.readthedocs.io/en/latest/usage.html#bulk-simulation).
+You can also use a methylation array to simulate a scMethyl-seq dataset with the proper formatting using the script `array_to_sc.py`.
+```
+usage: array_to_sc [-h] [-r REPEATS] [-o OUTNAME] [-s SEED] filename
+
+Converts methylation array to a simulated scMethyl-seq dataset.
+
+positional arguments:
+  filename                        Methylation array text file
+
+optional arguments:
+  -r, --repeats INTEGER           Number of times each beta value is 
+                                  sampled from a binomial distribution.
+  -o, --outname TEXT              Set the name and location of the outputs, 
+                                  e.g., "./data" will create the files 
+                                  "./data_counts.txt" and "./data_celltypes.txt"
+  -s, --seed INTEGER              Numpy random generator seed
+```
 
 **Pipeline controls and logging**
 ```
@@ -36,9 +55,7 @@ Each step of the scaden pipeline works the same as in the original. Each step ha
   --no_eval                       Skip the evaluation of the model
                                   predictions.
   --config TEXT                   Name of configuration.
-  -r, --reference TEXT            Number of times each cell type in the basis
-                                  is sampled to generate a simulated sc-
-                                  methylation dataset.
+  -r, --reference TEXT            Name of the scMethyl dataset.
 ```
 
 **Simulate**
