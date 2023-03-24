@@ -32,12 +32,9 @@ for row in range(sig.shape[0]):
         counts[row, (col*repeats):(col*repeats+repeats)] = rng.binomial(1, sig.iat[row,col], repeats)
 
 counts_df = pd.DataFrame(counts.T, index=[n for n in range(repeats*sig.shape[1])], columns=sig.index)
-
 counts_df.to_csv(f'{outname}_counts.txt', sep='\t')
-with open(f'{outname}_celltypes.txt', 'w') as f:
-    f.write('Celltype\n')
-    for label in sig.columns:
-        for n in range(repeats):
-            f.write(f'{label}\n')
+
+celltypes = pd.Series(np.repeat(sig.columns, repeats), name='Celltype')
+celltypes.to_csv(f'{outname}_celltypes.txt', sep='\t', index=False)
 
 print(f"Created files '{outname}_counts.txt' and '{outname}_celltypes.txt'")
