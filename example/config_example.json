@@ -1,0 +1,16 @@
+{
+    "config": "example",
+    "Data": {
+        "cells": 10,
+        "n_samples": 10,
+        "var_cutoff": 0.0,
+        "scaling": "frac",
+        "reference": "2"
+    },
+    "Model": {
+        "seed": 100,
+        "steps": 10,
+        "batch_size": 256,
+        "learning_rate": 0.0001
+    }
+}
