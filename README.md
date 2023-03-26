@@ -2,27 +2,30 @@
 Deep learning based cell composition analysis with Scaden using methylation data.
 
 ## Overview
-Forked from the [original scaden](https://github.com/KevinMenden/scaden) made by Menden et al. and modified to:
-- Use methylation data rather than scRNA-seq data.
+[Scaden](https://github.com/KevinMenden/scaden) (made by Menden et al.) is a deep learning based tool that predicts the cell type proportions of tissues from RNA-seq by  training on a separate scRNA-seq dataset.
+
+Scaden-methylation modifies the original scaden in a few ways:
+- Uses methylation data rather than RNA-seq data.
 - Combines all the scaden commands (simulate, process, train, predict) into one program to simplify the process of going through the entire pipeline.
-- Adds the option of evaluating the performance of the trained model by calculating the Spearman correlation coefficients with the ground truth proportions.
+- Adds the option of evaluating the performance of the trained model by calculating the Pearson correlation coefficients with the ground truth proportions.
 - Outputs a json file that logs the model hyperparameters and performance.
 
-## Requirements
-- Python 3
-- The same required packages as the original scaden (which can be downloaded [here](https://github.com/KevinMenden/scaden#installation-guide)).
-
-## Usage
-Run main.py to go through the entire scaden pipeline. These steps are:
+The pipeline has 5 steps:
 1. Simulate training data
 2. Preprocess training data
 3. Train model
 4. Predict on testing data
 5. Evaluate predictions
 
-Each step of the scaden pipeline works the same as in the original. Each step has its own set of parameters, so the invocation can be quite long.
+## Requirements
+- Python 3
+- The same required packages as the original scaden (which can be downloaded [here](https://github.com/KevinMenden/scaden#installation-guide)).
 
-To start the pipeline, a scMethyl-seq dataset is required. If you have a dataset, it must be formatted as explained [here](https://scaden.readthedocs.io/en/latest/usage.html#bulk-simulation).
+## Usage
+An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb.\
+
+
+To start the pipeline, you need a scMethyl-seq dataset and a methylation array that you want to perform deconvolution on. If you have a scMethyl-seq dataset, it must be formatted as explained [here](https://scaden.readthedocs.io/en/latest/usage.html#scrna-seq-data-processing).
 You can also use a methylation array to simulate a scMethyl-seq dataset with the proper formatting using the script `array_to_sc.py`.
 ```
 usage: array_to_sc [-h] [-r REPEATS] [-o OUTNAME] [-s SEED] filename
@@ -40,6 +43,8 @@ optional arguments:
                                   "./data_counts.txt" and "./data_celltypes.txt"
   -s, --seed INTEGER              Numpy random generator seed
 ```
+
+Once you have the necessary files, run `main.py` to go through the entire scaden pipeline and provide the necessary arguments. The first four steps of the pipeline work the same as in the original. Each step has its own set of parameters, so the invocation can be quite long.
 
 **Pipeline controls and logging**
 ```
