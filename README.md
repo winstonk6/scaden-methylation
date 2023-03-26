@@ -22,8 +22,7 @@ The pipeline has 5 steps:
 - The same required packages as the original scaden (which can be downloaded [here](https://github.com/KevinMenden/scaden#installation-guide)).
 
 ## Usage
-An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb.\
-
+An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb`.
 
 To start the pipeline, you need a scMethyl-seq dataset and a methylation array that you want to perform deconvolution on. If you have a scMethyl-seq dataset, it must be formatted as explained [here](https://scaden.readthedocs.io/en/latest/usage.html#scrna-seq-data-processing).
 You can also use a methylation array to simulate a scMethyl-seq dataset with the proper formatting using the script `array_to_sc.py`.
