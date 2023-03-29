@@ -4,6 +4,8 @@ import click
 @click.command()
 
 # Pipeline controls and logging
+@click.option('--load', help='Load parameters from YAML file.')
+
 @click.option('--no_sim', is_flag=True, help='Skip the creation of simulated training samples if you have already created a training set.')
 
 @click.option('--no_proc', is_flag=True, 
@@ -74,29 +76,52 @@ import click
 
 # Evaluate scaden predictions
 @click.option('-g', '--ground_truth', help="Name of file containing the ground truth cell proportions.")
-        
-
-def cli(config, no_sim, no_proc, no_pred, no_eval, 
+    
+def cli(config, no_sim, no_proc, no_pred, no_eval, load,
          out, data, cells, n_samples, pattern, unknown, prefix, data_format, 
          pred, processed_path, var_cutoff, scaling, 
          train_datasets, model_dir, batch_size, learning_rate, steps, seed, 
          prediction_outname, prediction_scaling, 
          ground_truth, reference):
     """
+    Collect all args
+    """
+    args = {'config': config, 'no_sim': no_sim, 'no_proc': no_proc, 'no_pred': no_pred, 'no_eval': no_pred,
+            'out': out, 'data': data, 'cells': cells, 'n_samples': n_samples, 'pattern': pattern, 
+            'unknown': unknown, 'prefix': prefix, 'data_format': data_format, 
+            'pred': pred, 'processed_path': processed_path, 'var_cutoff': var_cutoff, 'scaling': scaling, 
+            'train_datasets': train_datasets, 'model_dir': model_dir, 'batch_size': batch_size, 
+            'learning_rate': learning_rate, 'steps': steps, 'seed': seed, 
+            'prediction_outname': prediction_outname, 'prediction_scaling': prediction_scaling, 
+            'ground_truth': ground_truth, 'reference': reference}
+    
+    if load:
+        import yaml
+        with open(load, 'r') as fname:
+            params = yaml.safe_load(fname)
+        for p in params:
+            if p in args.keys():
+                args[p] = params[p]
+            else:
+                raise ValueError(f"Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.")
+    pipeline(args)
+    
+def pipeline(args):
+    """
     Run all scaden commands in a single program
     """
+    import sys
+    import os
     import time
     import json
+    import logging
+    import rich.logging
+    from types import SimpleNamespace
 
     import numpy as np
     import pandas as pd
     from anndata import read_h5ad
     from sklearn.preprocessing import MinMaxScaler
-    
-    import sys
-    import logging
-    import rich.logging
-    import os
 
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -111,75 +136,78 @@ def cli(config, no_sim, no_proc, no_pred, no_eval,
         )
     )
     
+    # Move args from dict to namespace for easier typing and reading.
+    a = SimpleNamespace(**args)
+    
     # Create paths if not specified by user
-    training_data = out + prefix + ".h5ad" # h5ad file generated from scaden simulate
+    training_data = a.out + a.prefix + ".h5ad" # h5ad file generated from scaden simulate
 
-    if processed_path is None:
-        processed_path = out + "processed.h5ad"
+    if a.processed_path is None:
+        a.processed_path = a.out + "processed.h5ad"
 
-    if prediction_outname is None:
-        prediction_outname = out + "scaden_predictions.txt"
+    if a.prediction_outname is None:
+        a.prediction_outname = a.out + "scaden_predictions.txt"
     
     # Simulate samples
-    if no_sim != True:
+    if a.no_sim != True:
         from simulate import simulation
         # Create artificial bulk RNA-seq data from scRNA-seq dataset(s)
         simulation(
-            simulate_dir = out,
-            data_dir = data,
-            sample_size = cells,
-            num_samples = n_samples,
-            pattern = pattern,
-            unknown_celltypes = unknown,
-            out_prefix = prefix,
-            fmt = data_format
+            simulate_dir = a.out,
+            data_dir = a.data,
+            sample_size = a.cells,
+            num_samples = a.n_samples,
+            pattern = a.pattern,
+            unknown_celltypes = a.unknown,
+            out_prefix = a.prefix,
+            fmt = a.data_format
         )
 
     # Preprocess training data
-    if no_proc != True:
+    if a.no_proc != True:
         from process import processing
         processing(
-            testing_data = pred, 
+            testing_data = a.pred, 
             training_data = training_data, 
-            processed_path = processed_path,
-            cells_per_sample = cells,
-            scaling = scaling,
-            var_cutoff = var_cutoff
+            processed_path = a.processed_path,
+            cells_per_sample = a.cells,
+            scaling = a.scaling,
+            var_cutoff = a.var_cutoff
         )
     
     # Train model
     from train import training
     start = time.time()
     training(
-        data_path = processed_path,
-        train_datasets = train_datasets,
-        model_dir = model_dir,
-        batch_size = batch_size,
-        learning_rate = learning_rate,
-        num_steps = steps,
-        seed = seed,
+        data_path = a.processed_path,
+        train_datasets = a.train_datasets,
+        model_dir = a.model_dir,
+        batch_size = a.batch_size,
+        learning_rate = a.learning_rate,
+        num_steps = a.steps,
+        seed = a.seed,
     )
     end = time.time()
     training_time = round(end - start, 3)
     logger.info(f"[bold]Training time: [green]{training_time}[/]")
     
     # Create config.json file
-    config_filepath = out + f'config_{config}.json'
+    config_filepath = a.out + f'config_{a.config}.json'
     with open(config_filepath, 'w', encoding='utf-8') as config_file:
         config_json = {
-            "config": config, 
+            "config": a.config, 
             "Data": {
-                "cells": cells, 
-                "n_samples": n_samples, 
-                "var_cutoff": var_cutoff,
-                "scaling": scaling,
-                "reference": reference
+                "cells": a.cells, 
+                "n_samples": a.n_samples, 
+                "var_cutoff": a.var_cutoff,
+                "scaling": a.scaling,
+                "reference": a.reference
             }, 
             "Model": {
-                "seed": seed, 
-                "steps": steps, 
-                "batch_size": batch_size, 
-                "learning_rate": learning_rate
+                "seed": a.seed, 
+                "steps": a.steps, 
+                "batch_size": a.batch_size, 
+                "learning_rate": a.learning_rate
             }
         }
         json.dump(config_json, config_file, ensure_ascii=False, indent=4)
@@ -187,24 +215,24 @@ def cli(config, no_sim, no_proc, no_pred, no_eval,
     logger.info(f"[bold]Created config file: [green]{config_filepath}[/]")
 
     # Make predictions
-    if no_pred != True:
+    if a.no_pred != True:
         from predict import prediction
         prediction(
-            model_dir = model_dir, 
-            data_path = pred, 
-            out_name = prediction_outname, 
-            cells = cells, 
-            scaling = prediction_scaling, 
-            seed = seed
+            model_dir = a.model_dir, 
+            data_path = a.pred, 
+            out_name = a.prediction_outname, 
+            cells = a.cells, 
+            scaling = a.prediction_scaling, 
+            seed = a.seed
         )
         
     # Evaluate predictions
-    if no_eval != True:
+    if a.no_eval != True:
         from evaluate import evaluate
-        report_filepath = out + f'report_{config}.json'
+        report_filepath = a.out + f'report_{a.config}.json'
         evaluate(
-            predictions_filename = prediction_outname, 
-            ground_truth_filename = ground_truth,
+            predictions_filename = a.prediction_outname, 
+            ground_truth_filename = a.ground_truth,
             report_filepath = report_filepath,
             training_time = training_time
         )

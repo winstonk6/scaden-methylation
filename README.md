@@ -20,6 +20,7 @@ The pipeline has 5 steps:
 ## Requirements
 - Python 3
 - The same required packages as the original scaden (which can be downloaded [here](https://github.com/KevinMenden/scaden#installation-guide)).
+- [PyYAML](https://pypi.org/project/PyYAML/)
 
 ## Usage
 An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb`.
@@ -43,10 +44,11 @@ optional arguments:
   -s, --seed INTEGER              Numpy random generator seed
 ```
 
-Once you have the necessary files, run `main.py` to go through the entire scaden pipeline and provide the necessary arguments. The first four steps of the pipeline work the same as in the original. Each step has its own set of parameters, so the invocation can be quite long.
+Once you have the necessary files, run `main.py` to go through the entire scaden pipeline and provide the necessary arguments as a YAML file or as command line arguments. Using a YAML file is recommended, since each step has its own set of parameters and the invocation can be quite long.
 
 **Pipeline controls and logging**
 ```
+  --load TEXT                     Load parameters from a YAML file.
   --no_sim                        Skip the creation of simulated training
                                   samples if you have already created a
                                   training set.
@@ -129,7 +131,33 @@ Once you have the necessary files, run `main.py` to go through the entire scaden
                                   cell proportions.
 ```
 
-Example invocation (with line breaks):
+## Examples
+Using a YAML file:
+`python main.py --load config.yaml`
+
+`config.yaml` file:
+```
+data: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/
+out: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/
+model_dir: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/model/
+pred: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_bulk_data.txt
+ground_truth: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_actual.txt
+prediction_outname: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_predictions.txt
+scaling: frac
+prediction_scaling: None
+var_cutoff: 0
+seed: 42
+cells: 200
+n_samples: 2000
+steps: 6000
+batch_size: 256
+learning_rate: 0.0001
+config: 42_c200_n2000_s6000_b256_l0.0001_r200_g0.1_c0.2
+reference: 200
+```
+
+
+Example invocation using command line (with line breaks):
 ```
 python main.py \
 --data ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/ \
