@@ -19,6 +19,7 @@ import click
 
 @click.option("--reference", "-r", default='1', help="Name of the scMethyl dataset.")
 
+
 # scaden simulate
 @click.option("--out", "-o", default="./", help="Directory to store output files in")
 
@@ -74,55 +75,41 @@ import click
 
 @click.option('--prediction_scaling', default="fraction", help="Change scaling option for the preprocessing done when making predictions. Uses the same options as --scaling.")
 
+
 # Evaluate scaden predictions
 @click.option('-g', '--ground_truth', help="Name of file containing the ground truth cell proportions.")
+
+
+def cli(load, no_sim, no_proc, no_pred, no_eval, config, reference,
+        out, data, cells, n_samples, pattern, unknown, prefix, data_format, 
+        pred, processed_path, var_cutoff, scaling, 
+        train_datasets, model_dir, batch_size, learning_rate, steps, seed, 
+        prediction_outname, prediction_scaling, 
+        ground_truth):
     
-def cli(config, no_sim, no_proc, no_pred, no_eval, load,
-         out, data, cells, n_samples, pattern, unknown, prefix, data_format, 
-         pred, processed_path, var_cutoff, scaling, 
-         train_datasets, model_dir, batch_size, learning_rate, steps, seed, 
-         prediction_outname, prediction_scaling, 
-         ground_truth, reference):
-    """
-    Collect all args
-    """
-    args = {'config': config, 'no_sim': no_sim, 'no_proc': no_proc, 'no_pred': no_pred, 'no_eval': no_pred,
-            'out': out, 'data': data, 'cells': cells, 'n_samples': n_samples, 'pattern': pattern, 
-            'unknown': unknown, 'prefix': prefix, 'data_format': data_format, 
-            'pred': pred, 'processed_path': processed_path, 'var_cutoff': var_cutoff, 'scaling': scaling, 
-            'train_datasets': train_datasets, 'model_dir': model_dir, 'batch_size': batch_size, 
-            'learning_rate': learning_rate, 'steps': steps, 'seed': seed, 
-            'prediction_outname': prediction_outname, 'prediction_scaling': prediction_scaling, 
-            'ground_truth': ground_truth, 'reference': reference}
+    # Move args to namespace to allow overwriting variables from strings
+    from types import SimpleNamespace
+    a = SimpleNamespace(**locals())
     
+    # Overwrite args with yaml file if provided
     if load:
         import yaml
         with open(load, 'r') as fname:
             params = yaml.safe_load(fname)
         for p in params:
-            if p in args.keys():
-                args[p] = params[p]
+            if p in locals().keys():           
+                setattr(a, p, params[p])
             else:
                 raise ValueError(f"Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.")
-    pipeline(args)
     
-def pipeline(args):
-    """
-    Run all scaden commands in a single program
-    """
+    # Run scaden commands
     import sys
     import os
     import time
     import json
     import logging
     import rich.logging
-    from types import SimpleNamespace
-
-    import numpy as np
-    import pandas as pd
-    from anndata import read_h5ad
-    from sklearn.preprocessing import MinMaxScaler
-
+    
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
     logger = logging.getLogger()
@@ -135,9 +122,6 @@ def pipeline(args):
             markup=True,
         )
     )
-    
-    # Move args from dict to namespace for easier typing and reading.
-    a = SimpleNamespace(**args)
     
     # Create paths if not specified by user
     training_data = a.out + a.prefix + ".h5ad" # h5ad file generated from scaden simulate
@@ -250,5 +234,4 @@ def main():
         
 if __name__ == "__main__":
     main()
-
 
