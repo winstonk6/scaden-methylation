@@ -1,29 +1,9 @@
 import numpy as np
 import pandas as pd
 from anndata import read_h5ad
-#import argparse
 from sklearn.preprocessing import MinMaxScaler
 import logging
 
-"""
-parser = argparse.ArgumentParser()
-parser.add_argument('--prediction_file', help='File containing the bulk counts data (i.e. testing set) that we want to make predictions on.')
-parser.add_argument('--training_data', help='h5ad file generated from scaden simulate (containing the training data)')
-parser.add_argument('--processed_path', help='Name of the file that the processed data will be saved to. Must end with .h5ad')
-parser.add_argument('--cells', help='Parameter taken from "scaden simulate --cells ..."')
-parser.add_argument('-sc', '--scaling', default='fraction', help='Option to use for scaling. Default = Fraction')
-parser.add_argument('--var_cutoff', default=0.1)
-
-args = parser.parse_args()
-
-testing_data = args.prediction_file # testing data
-training_data = args.training_data
-processed_path = args.processed_path
-cells_per_sample = int(args.cells)
-var_cutoff = float(args.var_cutoff)
-scaling = args.scaling
-
-"""
 logger = logging.getLogger(__name__)
 
 def sample_scaling(x, scaling_option):
@@ -115,5 +95,4 @@ def processing(testing_data, training_data, processed_path, cells_per_sample, sc
                          num_cells=cells_per_sample,
                          scaling=scaling,
                          sig_genes=sig_genes)
-    
-#processingv2(testing_data, training_data, processed_path, cells_per_sample, scaling, var_cutoff)
+

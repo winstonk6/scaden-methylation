@@ -10,6 +10,8 @@ Contains code to
 
 # Imports
 import logging
+import pandas as pd
+import numpy as np
 from class_scaden import Scaden
 
 
@@ -35,7 +37,7 @@ M1024_DO_RATES = architectures["m1024"][1]
 
 
 def training(
-    data_path, train_datasets, model_dir, batch_size, learning_rate, num_steps, seed=0
+    data_path, train_datasets, model_dir, batch_size, learning_rate, num_steps, seed=0, loss_values=None, loss_curve=None
 ):
     """
     Perform training of three a scaden model ensemble consisting of three different models
@@ -51,7 +53,7 @@ def training(
     else:
         train_datasets = train_datasets.split(",")
         logger.info(f"Training on: [cyan]{train_datasets}")
-
+    
     # Training of M256 model
     logger.info("[cyan]Training M256 Model ... [/]")
     cdn256 = Scaden(
@@ -65,6 +67,7 @@ def training(
         do_rates=M256_DO_RATES,
     )
     cdn256.train(input_path=data_path, train_datasets=train_datasets)
+    loss256 = cdn256.loss_curve
     del cdn256
 
     # Training of M512 model
@@ -80,6 +83,7 @@ def training(
         do_rates=M512_DO_RATES,
     )
     cdn512.train(input_path=data_path, train_datasets=train_datasets)
+    loss512 = cdn512.loss_curve
     del cdn512
 
     # Training of M1024 model
@@ -95,6 +99,23 @@ def training(
         do_rates=M1024_DO_RATES,
     )
     cdn1024.train(input_path=data_path, train_datasets=train_datasets)
+    loss1024 = cdn1024.loss_curve
     del cdn1024
-
+    
     logger.info("[green]Training finished.")
+    
+    loss = pd.DataFrame({'step': list(range(num_steps))*3, 
+                         'model': np.repeat(['m256', 'm512', 'm1024'], num_steps),
+                         'loss': np.concatenate((loss256, loss512, loss1024))
+                        })
+    if loss_values is not None:
+        loss.to_csv(loss_values, index=False, sep='\t')
+        logger.info(f'Loss values written to: {loss_values}')
+    
+    if loss_curve is not None:
+        import seaborn as sns
+        g = sns.lineplot(data=loss, x='step', y='loss', hue='model')
+        g.figure.savefig(loss_curve)
+        logger.info(f'Loss curve saved to: {loss_curve}')
+        
+        

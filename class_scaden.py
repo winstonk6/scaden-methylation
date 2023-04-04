@@ -73,7 +73,8 @@ class Scaden(object):
         self.sample_names = None
         self.hidden_units = hidden_units
         self.do_rates = do_rates
-        self.cells=cells
+        self.cells = cells
+        self.loss_curve = np.empty(num_steps)
 
         # Set seeds for reproducibility
         tf.random.set_seed(seed)
@@ -350,7 +351,10 @@ class Scaden(object):
                 progress_bar.update(
                     training_progress, advance=1, step=step, loss=f"{loss:.4f}"
                 )
-
+                
+                # Record loss
+                self.loss_curve[step] = loss
+                
                 # Collect garbage after 100 steps - otherwise runs out of memory
                 if step % 100 == 0:
                     gc.collect()
@@ -363,6 +367,7 @@ class Scaden(object):
         pd.DataFrame(self.sig_genes).to_csv(
             os.path.join(self.model_dir, "genes.txt"), sep="\t"
         )
+
 
     def predict(self, input_path):
         """
