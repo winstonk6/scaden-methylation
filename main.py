@@ -165,14 +165,6 @@ def cli(load, simulate, process, train, predict, evaluate,
     """
     Handle args
     """
-    # Ensure that if any mode is being used, only one mode is provided.
-    modes = [simulate, process, train, predict, evaluate]
-    if sum(modes) > 1:
-        import numpy as np
-        commands = np.array(['simulate', 'process', 'train', 'predict', 'evaluate'])
-        click.echo(f"Error: Multiple commands {commands[np.where(modes)]} used. You should only provide one command at a time, or don't use any commands to go through the entire pipeline.", err=True)
-        sys.exit()
-    
     # Move args to namespace to allow overwriting variables from strings
     from types import SimpleNamespace
     a = SimpleNamespace(**locals())
@@ -189,6 +181,14 @@ def cli(load, simulate, process, train, predict, evaluate,
             else:
                 click.echo(f"Error: Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.", err=True)
                 sys.exit()
+    
+    # Ensure that if any mode is being used, only one mode is provided.
+    modes = [a.simulate, a.process, a.train, a.predict, a.evaluate]
+    if sum(modes) > 1:
+        import numpy as np
+        commands = np.array(['simulate', 'process', 'train', 'predict', 'evaluate'])
+        click.echo(f"Error: Multiple commands {commands[np.where(modes)]} used. You should only provide one command at a time, or don't use any commands to go through the entire pipeline.", err=True)
+        sys.exit()
     
     # Create paths if not specified by user
     if a.training_data is None:
@@ -208,27 +208,27 @@ def cli(load, simulate, process, train, predict, evaluate,
     SCADEN MODES
     """
     # scaden simulate
-    if simulate:
+    if a.simulate:
         sc_simulate(a.out, a.data, a.cells, a.n_samples, a.pattern, a.unknown, a.prefix, a.data_format)
         sys.exit()
     
     # scaden process
-    if process:
+    if a.process:
         sc_process(a.pred, a.training_data, a.processed_path, a.cells, a.scaling, a.var_cutoff)
         sys.exit()
     
     # scaden train
-    if train:
+    if a.train:
         sc_train(a.processed_path, a.train_datasets, a.model_dir, a.batch_size, a.learning_rate, a.steps, a.seed, a.loss_values, a.loss_curve)
         sys.exit()
     
     # scaden predict
-    if predict:
+    if a.predict:
         sc_predict(a.model_dir, a.pred, a.prediction_outname, a.cells, a.prediction_scaling, a.seed)
         sys.exit()
     
     # scaden evaluate
-    if evaluate:
+    if a.evaluate:
         sc_evaluate(a.out, a.config, a.prediction_outname, a.ground_truth)
         sys.exit()
     
