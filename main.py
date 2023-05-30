@@ -5,6 +5,7 @@ import os
 import json
 import logging
 import rich.logging
+from pathlib import Path
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -165,6 +166,7 @@ def cli(load, simulate, process, train, predict, evaluate,
     """
     Handle args
     """
+    param_names = list(locals().keys())
     # Move args to namespace to allow overwriting variables from strings
     from types import SimpleNamespace
     a = SimpleNamespace(**locals())
@@ -176,7 +178,7 @@ def cli(load, simulate, process, train, predict, evaluate,
             params = yaml.safe_load(fname)
         logger.info(f'Using params from: {load}')
         for p in params:
-            if p in locals().keys():           
+            if p in param_names:           
                 setattr(a, p, params[p])
             else:
                 click.echo(f"Error: Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.", err=True)
@@ -199,10 +201,23 @@ def cli(load, simulate, process, train, predict, evaluate,
 
     if a.prediction_outname is None:
         a.prediction_outname = a.out + 'scaden_predictions.txt'
-
-    if a.loss_curve is None:
-        a.loss_curve = a.out + 'loss_curve.tsv'
     
+    # Parameter validation
+    param_errors = {}
+    for n in ['out', 'data', 'pred', 'model_dir', 'ground_truth']: # input/output directories and files
+        if not Path(getattr(a, n)).expanduser().exists():
+            param_errors[n] = getattr(a, n)
+    
+    for n in ['processed_path', 'training_data', 'loss_values', 'loss_curve', 'prediction_outname']: # Generated files
+        if getattr(a, n) is not None:
+            if not Path(getattr(a, n)).expanduser().parent.exists():
+                param_errors[n] = getattr(a, n)
+
+    if len(param_errors) > 0:
+        click.echo('Error: parameter directories/files or the parent directories do not exist:', err=True)
+        for n in param_errors.keys():
+            click.echo(f"'{n}':\t{param_errors[n]}", err=True)
+        sys.exit()
     
     """
     SCADEN MODES
@@ -251,19 +266,19 @@ def cli(load, simulate, process, train, predict, evaluate,
     config_filepath = a.out + f'config_{a.config}.json'
     with open(config_filepath, 'w', encoding='utf-8') as config_file:
         config_json = {
-            'config': config, 
+            'config': a.config, 
             'Data': {
-                'cells': cells, 
-                'n_samples': n_samples, 
-                'var_cutoff': var_cutoff,
-                'scaling': scaling,
-                'reference': reference
+                'cells': a.cells, 
+                'n_samples': a.n_samples, 
+                'var_cutoff': a.var_cutoff,
+                'scaling': a.scaling,
+                'reference': a.reference
             }, 
             'Model': {
-                'seed': seed, 
-                'steps': steps, 
-                'batch_size': batch_size, 
-                'learning_rate': learning_rate
+                'seed': a.seed, 
+                'steps': a.steps, 
+                'batch_size': a.batch_size, 
+                'learning_rate': a.learning_rate
             }
         }
         json.dump(config_json, config_file, ensure_ascii=False, indent=4)
