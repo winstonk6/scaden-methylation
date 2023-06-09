@@ -7,7 +7,7 @@ and subsequenbt formatting in .h5ad file for training with Scaden
 
 
 def simulation(simulate_dir, data_dir, sample_size, num_samples, pattern,
-               unknown_celltypes, out_prefix, fmt):
+               unknown_celltypes, out_prefix, fmt, seed):
 
     unknown_celltypes = list(unknown_celltypes)
     bulk_simulator = BulkSimulator(sample_size=sample_size,
@@ -16,7 +16,8 @@ def simulation(simulate_dir, data_dir, sample_size, num_samples, pattern,
                                    out_dir=simulate_dir,
                                    pattern=pattern,
                                    unknown_celltypes=unknown_celltypes,
-                                   fmt=fmt)
+                                   fmt=fmt,
+                                   seed=seed)
 
     # Perform dataset simulation
     bulk_simulator.simulate()

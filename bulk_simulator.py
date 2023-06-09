@@ -13,18 +13,6 @@ from rich.progress import BarColumn, Progress
 logger = logging.getLogger(__name__)
 
 
-def create_fractions(no_celltypes):
-    """
-    Create random fractions
-    :param no_celltypes: number of fractions to create
-    :return: list of random fractions of length no_celltypes
-    """
-    fracs = np.random.rand(no_celltypes)
-    fracs_sum = np.sum(fracs)
-    fracs = np.divide(fracs, fracs_sum)
-    return fracs
-
-
 class BulkSimulator(object):
     """
     BulkSimulator class for the simulation of artificial bulk samples
@@ -37,6 +25,7 @@ class BulkSimulator(object):
     :param pattern of the data files
     :param unknown_celltypes: which celltypes to merge into the unknown class
     :param fmt: the format of the input files, can be txt or h5ad
+    :param seed: random number generator seed
     """
 
     def __init__(
@@ -48,6 +37,7 @@ class BulkSimulator(object):
         pattern="*_counts.txt",
         unknown_celltypes=None,
         fmt="txt",
+        seed=None
     ):
         if unknown_celltypes is None:
             unknown_celltypes = ["unknown"]
@@ -61,6 +51,18 @@ class BulkSimulator(object):
         self.format = fmt
         self.datasets = []
         self.dataset_files = []
+        self.rng = np.random.default_rng(seed)
+
+    def create_fractions(self, no_celltypes):
+        """
+        Create random fractions
+        :param no_celltypes: number of fractions to create
+        :return: list of random fractions of length no_celltypes
+        """
+        fracs = self.rng.random(no_celltypes)
+        fracs_sum = np.sum(fracs)
+        fracs = np.divide(fracs, fracs_sum)
+        return fracs
 
     def simulate(self):
         """simulate artificial bulk datasets"""
@@ -279,8 +281,8 @@ class BulkSimulator(object):
         """
         available_celltypes = celltypes
         if sparse:
-            no_keep = np.random.randint(1, len(available_celltypes))
-            keep = np.random.choice(
+            no_keep = self.rng.integers(1, len(available_celltypes))
+            keep = self.rng.choice(
                 list(range(len(available_celltypes))), size=no_keep, replace=False
             )
             available_celltypes = [available_celltypes[i] for i in keep]
@@ -288,7 +290,7 @@ class BulkSimulator(object):
         no_avail_cts = len(available_celltypes)
 
         # Create fractions for available celltypes
-        fracs = create_fractions(no_celltypes=no_avail_cts)
+        fracs = self.create_fractions(no_celltypes=no_avail_cts)
         samp_fracs = np.multiply(fracs, self.sample_size)
         samp_fracs = list(map(int, samp_fracs))
 
@@ -302,7 +304,7 @@ class BulkSimulator(object):
         for i in range(no_avail_cts):
             ct = available_celltypes[i]
             cells_sub = x.loc[np.array(y["Celltype"] == ct), :]
-            cells_fraction = np.random.randint(0, cells_sub.shape[0], samp_fracs[i])
+            cells_fraction = self.rng.integers(0, cells_sub.shape[0], samp_fracs[i])
             cells_sub = cells_sub.iloc[cells_fraction, :]
             artificial_samples.append(cells_sub)
 

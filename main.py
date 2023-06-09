@@ -23,7 +23,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 training_time = 0
 
 
-def sc_simulate(out, data, cells, n_samples, pattern, unknown, prefix, data_format):
+def sc_simulate(out, data, cells, n_samples, pattern, unknown, prefix, data_format, seed):
     from simulate import simulation
     simulation(
         simulate_dir = out,
@@ -33,7 +33,8 @@ def sc_simulate(out, data, cells, n_samples, pattern, unknown, prefix, data_form
         pattern = pattern,
         unknown_celltypes = unknown,
         out_prefix = prefix,
-        fmt = data_format
+        fmt = data_format,
+        seed=seed
     )
 
 
@@ -205,8 +206,9 @@ def cli(load, simulate, process, train, predict, evaluate,
     # Parameter validation
     param_errors = {}
     for n in ['out', 'data', 'pred', 'model_dir', 'ground_truth']: # input/output directories and files
-        if not Path(getattr(a, n)).expanduser().exists():
-            param_errors[n] = getattr(a, n)
+        if getattr(a, n) is not None:
+            if not Path(getattr(a, n)).expanduser().exists():
+                param_errors[n] = getattr(a, n)
     
     for n in ['processed_path', 'training_data', 'loss_values', 'loss_curve', 'prediction_outname']: # Generated files
         if getattr(a, n) is not None:
@@ -224,7 +226,7 @@ def cli(load, simulate, process, train, predict, evaluate,
     """
     # scaden simulate
     if a.simulate:
-        sc_simulate(a.out, a.data, a.cells, a.n_samples, a.pattern, a.unknown, a.prefix, a.data_format)
+        sc_simulate(a.out, a.data, a.cells, a.n_samples, a.pattern, a.unknown, a.prefix, a.data_format, a.seed+1)
         sys.exit()
     
     # scaden process
@@ -253,7 +255,7 @@ def cli(load, simulate, process, train, predict, evaluate,
     """
     # Go through entire pipeline if not using one mode
     if a.no_sim != True:
-        sc_simulate(a.out, a.data, a.cells, a.n_samples, a.pattern, a.unknown, a.prefix, a.data_format)
+        sc_simulate(a.out, a.data, a.cells, a.n_samples, a.pattern, a.unknown, a.prefix, a.data_format, a.seed)
 
     if a.no_proc != True:
         sc_process(a.pred, a.training_data, a.processed_path, a.cells, a.scaling, a.var_cutoff)

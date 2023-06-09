@@ -46,7 +46,7 @@ optional arguments:
 
 Once you have the necessary files, run `main.py` to go through the entire scaden pipeline and provide the necessary arguments as a YAML file or as command line arguments. Using a YAML file is recommended, since each step has its own set of parameters and the invocation can be quite long.
 
-You can also run each command individually by adding the appropriate flag (e.g., `-simulate`)
+You can also run each command individually by adding the appropriate flag on the command line (e.g., `-simulate`) or in the YAML file (`simulate: True`)
 
 **Pipeline controls and logging**
 ```
@@ -66,6 +66,7 @@ You can also run each command individually by adding the appropriate flag (e.g.,
   --no_eval                  Skip the evaluation of the model predictions
   --config TEXT              Name of configuration
   --reference TEXT           Name of the scMethyl dataset
+  --seed INTEGER             Set random seed for simulation and training.
 ```
 
 **Simulate**
@@ -115,7 +116,6 @@ You can also run each command individually by adding the appropriate flag (e.g.,
   --learning_rate FLOAT      Learning rate used for training. [default:
                              0.0001]
   --steps INTEGER            Number of training steps. [default: 5000]
-  --seed INTEGER             Set random seed
   --loss_values TEXT         Name of file to save text file of loss values
   --loss_curve TEXT          Name of file to save line plot figure of loss
                              values
