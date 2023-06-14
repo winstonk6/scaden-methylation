@@ -112,7 +112,9 @@ class BulkSimulator(object):
         logger.info(f"Subsampling [bold cyan]{dataset}[/] ...")
 
         # Extract celltypes
-        celltypes = list(set(data_y["Celltype"].tolist()))
+        celltypes = data_y["Celltype"].unique().tolist()
+        self.rng.shuffle(celltypes)
+
         tmp_x, tmp_y = self.create_subsample_dataset(
             data_x, data_y, celltypes=celltypes
         )
