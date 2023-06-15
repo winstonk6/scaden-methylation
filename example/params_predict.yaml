@@ -1,3 +1,4 @@
+predict: True
 pred: ~/example/testfile.tsv
 model_dir: ~/example/model/
 prediction_outname: ~/example/test_predictions.txt

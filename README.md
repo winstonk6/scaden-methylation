@@ -44,46 +44,43 @@ optional arguments:
   -s, --seed INTEGER              Numpy random generator seed
 ```
 
-Once you have the necessary files, run `main.py` to go through the entire scaden pipeline and provide the necessary arguments as a YAML file or as command line arguments. Using a YAML file is recommended, since each step has its own set of parameters and the invocation can be quite long.
+Once you have the necessary files, run `main.py` to go through the scaden pipeline and provide the necessary arguments in a YAML file or as command line arguments. Using a YAML file is recommended, since each step has its own set of parameters and the invocation can be quite long.
 
-You can also run each command individually by adding the appropriate flag on the command line (e.g., `-simulate`) or in the YAML file (`simulate: True`)
+To run each step of the pipeline, add the appropriate flag(s) on the command line (e.g., `-simulate`) or in the YAML file (`simulate: True`). You can also run all steps using the `all` flag. At least one 
 
 **Pipeline controls and logging**
 ```
-  -load TEXT                 Load parameters from YAML file
+  -load TEXT                 YAML file from which parameters are loaded
+  -all                       Run all steps of the pipeline (simulate, process,
+                             train, predict, evaluate)
   -simulate                  Run scaden simulate
   -process                   Run scaden process
   -train                     Run scaden train
   -predict                   Run scaden predict
   -evaluate                  Run evaluation
-  --no_sim                   Skip the creation of simulated training samples
-                             if you have already created a training set
-  --no_proc                  Skip the preprocessing step if you have already
-                             processed the training data. If using this flag,
-                             then --proc is required.
-  --no_pred                  Skip the creation of simulated training samples
-                             if you have already created a training set
-  --no_eval                  Skip the evaluation of the model predictions
-  --config TEXT              Name of configuration
-  --reference TEXT           Name of the scMethyl dataset
-  --seed INTEGER             Set random seed for simulation and training.
+  --config TEXT              Name of configuration  [default: test]
+  --reference TEXT           Name of the scMethyl dataset  [default: 1]
+  --json                     Create a json file recording the data and model
+                             hyperparameters  [default: True]
+  --seed INTEGER             Set random seed for simulation and training
+                             [default: 0]
 ```
 
 **Simulate**
 ```
-  -o, --out TEXT             Directory to store output files in
-  -d, --data TEXT            Path to scRNA-seq dataset(s)
-  -c, --cells INTEGER        Number of cells per sample [default: 100]
-  -n, --n_samples INTEGER    Number of samples to simulate [default: 1000]
+  -o, --out TEXT             Directory to store output files in  [default: ./]
+  -d, --data TEXT            Path to scRNA-seq dataset(s)  [default: .]
+  -c, --cells INTEGER        Number of cells per sample  [default: 100]
+  -n, --n_samples INTEGER    Number of samples to simulate  [default: 1000]
   --pattern TEXT             File pattern to recognize your processed scRNA-
-                             seq count files
+                             seq count files  [default: *_counts.txt]
   -u, --unknown TEXT         Specifiy cell types to merge into the unknown
                              category. Specify this flag for every cell type
-                             you want to merge in unknown. [default: unknown]
-  -p, --prefix TEXT          Prefix to append to training .h5ad file [default:
-                             data]
+                             you want to merge in unknown.  [default: unknown]
+  -p, --prefix TEXT          Prefix to append to training .h5ad file
+                             [default: data]
   -f, --data_format TEXT     Data format of scRNA-seq data, can be 'txt' or
-                             'h5ad' [default: 'txt']
+                             'h5ad'  [default: txt]
 ```
 
 **Preprocess**
@@ -97,25 +94,25 @@ You can also run each command individually by adding the appropriate flag on the
   --var_cutoff FLOAT         Filter out genes with a variance less than the
                              specified cutoff. A low value is recommended,
                              this should only remove genes that are obviously
-                             uninformative. [default: 0.1]
+                             uninformative.  [default: 0.1]
   --scaling TEXT             Change scaling option for preprocessing the
                              training data. If something other than the
                              provided options is used, then no scaling will be
-                             done. [default: fraction] Options: None (No
-                             scaling), log / log_min_max (log2, then scale to
-                             the range 0,1), frac / fraction (Divide values by
-                             the number of cells)
+                             done. Options: None (No scaling), log /
+                             log_min_max (log2, then scale to the range 0,1),
+                             frac / fraction (Divide values by the number of
+                             cells)  [default: fraction]
 ```
 
 **Train**
 ```
   --train_datasets TEXT      Comma-separated list of datasets used for
                              training. Uses all by default.
-  --model_dir TEXT           Path to store the model in
-  --batch_size INTEGER       Batch size to use for training. [default: 128]
-  --learning_rate FLOAT      Learning rate used for training. [default:
+  --model_dir TEXT           Path to store the model in  [default: ./]
+  --batch_size INTEGER       Batch size to use for training.  [default: 128]
+  --learning_rate FLOAT      Learning rate used for training.  [default:
                              0.0001]
-  --steps INTEGER            Number of training steps. [default: 5000]
+  --steps INTEGER            Number of training steps.  [default: 5000]
   --loss_values TEXT         Name of file to save text file of loss values
   --loss_curve TEXT          Name of file to save line plot figure of loss
                              values
@@ -123,10 +120,11 @@ You can also run each command individually by adding the appropriate flag on the
 
 **Predict**
 ```
-  --prediction_outname TEXT  Name of predictions file
+  --prediction_outname TEXT  Name of predictions file  [default:
+                             scaden_predictions.txt]
   --prediction_scaling TEXT  Change scaling option for the preprocessing done
                              when making predictions. Uses the same options as
-                             --scaling.
+                             --scaling.  [default: fraction]
 ```
 
 **Evaluate**
@@ -185,5 +183,5 @@ python main.py \
 
 Running one command at a time:
 ```
-python main.py -predict -load params.yaml
+python main.py -load params.yaml
 ```

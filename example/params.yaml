@@ -1,3 +1,4 @@
+all: True
 config: example
 reference: "2"
 data: ~/example/
