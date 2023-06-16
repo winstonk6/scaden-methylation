@@ -60,7 +60,7 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
   -evaluate                  Run evaluation
   --config TEXT              Name of configuration  [default: test]
   --reference TEXT           Name of the scMethyl dataset  [default: 1]
-  --json                     Create a json file recording the data and model
+  --log_params               Create a json file recording the data and model
                              hyperparameters  [default: True]
   --seed INTEGER             Set random seed for simulation and training
                              [default: 0]

@@ -34,7 +34,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 @click.option('--config', default='test', show_default=True, help='Name of configuration')
 @click.option('--reference', default='1', show_default=True, help='Name of the scMethyl dataset')
-@click.option('--json', is_flag=True, default =True, show_default=True, help='Create a json file recording the data and model hyperparameters')
+@click.option('--log_params', is_flag=True, default =True, show_default=True, help='Create a json file recording the data and model hyperparameters')
 @click.option('--seed', default=0, type=int, show_default=True, help='Set random seed')
 
 # scaden simulate
@@ -79,7 +79,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 @click.option('--ground_truth', show_default=True, help='Name of file containing the ground truth cell proportions')
 
 def cli(load, all, simulate, process, train, predict, evaluate, config, reference,
-        out, data, cells, n_samples, pattern, unknown, prefix, data_format, json,
+        out, data, cells, n_samples, pattern, unknown, prefix, data_format, log_params,
         pred, training_data, processed_path, var_cutoff, scaling, 
         train_datasets, model_dir, batch_size, learning_rate, steps, seed, loss_values, loss_curve,
         prediction_outname, prediction_scaling, 
