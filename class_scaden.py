@@ -97,6 +97,7 @@ class Scaden(object):
 
         return model
 
+    @tf.function
     def compute_loss(self, logits, targets):
         """
         Compute L1 loss
@@ -334,26 +335,31 @@ class Scaden(object):
         training_progress = progress_bar.add_task(
             self.model_name, total=self.num_steps, step=0, loss=1
         )
+        
+        @tf.function
+        def train_step(x, y):
+            # See: https://www.tensorflow.org/guide/keras/writing_a_training_loop_from_scratch
+            with tf.GradientTape() as tape:
+                self.logits = self.model(x, training=True) # Forward pass
+                loss = self.compute_loss(self.logits, y) # Loss values for this batch
+
+            grads = tape.gradient(loss, self.model.trainable_weights) # Get gradients of loss wrt the weights.
+
+            optimizer.apply_gradients(zip(grads, self.model.trainable_weights)) # Update the weights of the model.
+            return loss
+        
         with progress_bar:
-
+            # Training loop
             for step in range(self.num_steps):
-
                 x, y = self.data_iter.get_next()
-
-                with tf.GradientTape() as tape:
-                    self.logits = self.model(x, training=True)
-                    loss = self.compute_loss(self.logits, y)
-
-                grads = tape.gradient(loss, self.model.trainable_weights)
-
-                optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-
+                
+                # Do training step and record loss
+                loss = train_step(x, y)
+                self.loss_curve[step] = loss
+                
                 progress_bar.update(
                     training_progress, advance=1, step=step, loss=f"{loss:.4f}"
                 )
-                
-                # Record loss
-                self.loss_curve[step] = loss
                 
                 # Collect garbage after 100 steps - otherwise runs out of memory
                 if step % 100 == 0:
