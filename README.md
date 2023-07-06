@@ -51,6 +51,8 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
 **Pipeline controls and logging**
 ```
   -load TEXT                 YAML file from which parameters are loaded
+  -v, --verify               Verify that parameters are valid, then exit
+                             without doing any steps.
   -all                       Run all steps of the pipeline (simulate, process,
                              train, predict, evaluate)
   -simulate                  Run scaden simulate
@@ -59,11 +61,10 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
   -predict                   Run scaden predict
   -evaluate                  Run evaluation
   --config TEXT              Name of configuration  [default: test]
-  --reference TEXT           Name of the scMethyl dataset  [default: 1]
+  --reference TEXT           Name of the dataset  [default: None]
   --log_params               Create a json file recording the data and model
-                             hyperparameters  [default: True]
-  --seed INTEGER             Set random seed for simulation and training
-                             [default: 0]
+                             hyperparameters
+  --seed INTEGER             Set random seed  [default: 0]
 ```
 
 **Simulate**
@@ -85,8 +86,10 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
 
 **Preprocess**
 ```
-  --pred TEXT                Bulk data file (i.e. testing set) that we want to
-                             perform deconvolution on
+  --pred TEXT                Bulk data file (or testing set) that we want to
+                             perform deconvolution on. Should be a text or
+                             h5ad file with rows as genes and samples as
+                             columns.
   --training_data TEXT       Training dataset to be processed. Only use this
                              if you are running 'scaden process' by itself.
   --processed_path TEXT      Name of the file that the processed data will be

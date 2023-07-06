@@ -7,6 +7,7 @@ import logging
 import rich.logging
 from pathlib import Path
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(
@@ -25,6 +26,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Pipeline controls and logging
 @click.option('-load', help='YAML file from which parameters are loaded')
+@click.option('-v', '--verify', is_flag=True, help='Verify that parameters are valid, then exit without doing any steps.')
 @click.option('-all', is_flag=True, help='Run all steps of the pipeline (simulate, process, train, predict, evaluate)')
 @click.option('-simulate', is_flag=True, help='Run scaden simulate')
 @click.option('-process', is_flag=True, help='Run scaden process')
@@ -33,8 +35,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 @click.option('-evaluate', is_flag=True, help='Run evaluation')
 
 @click.option('--config', default='test', show_default=True, help='Name of configuration')
-@click.option('--reference', default='1', show_default=True, help='Name of the scMethyl dataset')
-@click.option('--log_params', is_flag=True, default =True, show_default=True, help='Create a json file recording the data and model hyperparameters')
+@click.option('--reference', default='None', show_default=True, help='Name of the dataset')
+@click.option('--log_params', is_flag=True, show_default=True, help='Create a json file recording the data and model hyperparameters')
 @click.option('--seed', default=0, type=int, show_default=True, help='Set random seed')
 
 # scaden simulate
@@ -50,7 +52,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 @click.option('--data_format', '-f', default='txt', show_default=True, help="Data format of scRNA-seq data, can be 'txt' or 'h5ad'")
 
 # scaden process
-@click.option('--pred', help='Bulk data file (i.e. testing set) that we want to perform deconvolution on')
+@click.option('--pred', help='Bulk data file (or testing set) that we want to perform deconvolution on. Should be a text or h5ad file with rows as genes and samples as columns.')
 @click.option('--training_data', help="Training dataset to be processed. Only use this if you are running 'scaden process' by itself.")
 @click.option('--processed_path', help='Name of the file that the processed data will be saved to. Must end with .h5ad')
 @click.option('--var_cutoff', default=0.1, show_default=True, type=float,
@@ -58,7 +60,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
                     'this should only remove genes that are obviously uninformative.')
 @click.option('--scaling', default='fraction', show_default=True,
                     help='Change scaling option for preprocessing the training data. If something other than the provided options is '
-                    'used, then no scaling will be done. [default: fraction] '
+                    'used, then no scaling will be done. '
                     'Options: None (No scaling), log / log_min_max (log2, then scale to the range 0,1), '
                     'frac / fraction (Divide values by the number of cells)')
 
@@ -78,10 +80,11 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # Evaluate scaden predictions
 @click.option('--ground_truth', show_default=True, help='Name of file containing the ground truth cell proportions')
 
-def cli(load, all, simulate, process, train, predict, evaluate, config, reference,
-        out, data, cells, n_samples, pattern, unknown, prefix, data_format, log_params,
+def cli(load, verify, all, simulate, process, train, predict, evaluate, 
+        config, reference, log_params, seed,
+        out, data, cells, n_samples, pattern, unknown, prefix, data_format, 
         pred, training_data, processed_path, var_cutoff, scaling, 
-        train_datasets, model_dir, batch_size, learning_rate, steps, seed, loss_values, loss_curve,
+        train_datasets, model_dir, batch_size, learning_rate, steps, loss_values, loss_curve,
         prediction_outname, prediction_scaling, 
         ground_truth):
     """
@@ -106,18 +109,8 @@ def cli(load, all, simulate, process, train, predict, evaluate, config, referenc
             if p in param_names:           
                 setattr(a, p, params[p])
             else:
-                click.echo(f"Error: Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.", err=True)
-                sys.exit()
-    
-    # Create paths if not specified by user
-    if a.training_data is None:
-        a.training_data = Path(a.out) / (a.prefix + '.h5ad') # h5ad file generated from scaden simulate
-    
-    if a.processed_path is None:
-        a.processed_path = Path(a.out) / 'processed.h5ad'
-
-    if a.prediction_outname is None:
-        a.prediction_outname = Path(a.out) / 'scaden_predictions.txt'
+                logger.error(f"Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.")
+                sys.exit(1)
     
     # Parameter validation
     param_errors = {}
@@ -132,14 +125,28 @@ def cli(load, all, simulate, process, train, predict, evaluate, config, referenc
                 param_errors[n] = getattr(a, n)
 
     if len(param_errors) > 0:
-        click.echo('Error: parameter directories/files or the parent directories do not exist:', err=True)
+        logger.error('Some parameter directories/files or their parent directories do not exist:')
         for n in param_errors.keys():
-            click.echo(f"'{n}':\t{param_errors[n]}", err=True)
-        sys.exit()
+            logger.error(f"\t'{n}':\t{param_errors[n]}")
+        sys.exit(1)
     
     if sum([a.all, a.simulate, a.process, a.train, a.predict, a.evaluate]) == 0:
-        click.echo('Error: at least one of the following flags must be provided: all, simulate, process, train, predict, evaluate', err=True)
+        logger.error('At least one of the following flags must be provided: all, simulate, process, train, predict, evaluate')
+        sys.exit(1)
+    
+    if a.verify:
+        logger.info('[green]All parameters are valid.[/]')
         sys.exit()
+    
+    # Create paths if not specified by user
+    if a.training_data is None:
+        a.training_data = Path(a.out) / (a.prefix + '.h5ad') # h5ad file generated from scaden simulate
+    
+    if a.processed_path is None:
+        a.processed_path = Path(a.out) / 'processed.h5ad'
+
+    if a.prediction_outname is None:
+        a.prediction_outname = Path(a.out) / 'scaden_predictions.txt'
     
     if a.all:
         a.simulate = True
@@ -147,6 +154,30 @@ def cli(load, all, simulate, process, train, predict, evaluate, config, referenc
         a.train = True
         a.predict = True
         a.evaluate = True
+    
+    if a.log_params:
+        # Create config.json file
+        config_filepath = Path(a.out) / f'config_{a.config}.json'
+        with open(config_filepath, 'w', encoding='utf-8') as config_file:
+            config_json = {
+                'config': a.config, 
+                'reference': a.reference,
+                'Data': {
+                    'cells': a.cells, 
+                    'n_samples': a.n_samples, 
+                    'var_cutoff': a.var_cutoff,
+                    'scaling': a.scaling,
+                    'reference': a.reference
+                }, 
+                'Model': {
+                    'seed': a.seed, 
+                    'steps': a.steps, 
+                    'batch_size': a.batch_size, 
+                    'learning_rate': a.learning_rate
+                }
+            }
+            json.dump(config_json, config_file, ensure_ascii=False, indent=4)
+        logger.info(f'[bold]Created config file: [green]{config_filepath}[/]')
     
     """
     SCADEN MODES
@@ -198,28 +229,6 @@ def cli(load, all, simulate, process, train, predict, evaluate, config, referenc
         end = time.time()
         training_time = round(end - start, 3)
         logger.info(f'[bold]Training time: [green]{training_time} seconds[/]')
-
-        # Create config.json file
-        config_filepath = Path(a.out) / f'config_{a.config}.json'
-        with open(config_filepath, 'w', encoding='utf-8') as config_file:
-            config_json = {
-                'config': a.config, 
-                'Data': {
-                    'cells': a.cells, 
-                    'n_samples': a.n_samples, 
-                    'var_cutoff': a.var_cutoff,
-                    'scaling': a.scaling,
-                    'reference': a.reference
-                }, 
-                'Model': {
-                    'seed': a.seed, 
-                    'steps': a.steps, 
-                    'batch_size': a.batch_size, 
-                    'learning_rate': a.learning_rate
-                }
-            }
-            json.dump(config_json, config_file, ensure_ascii=False, indent=4)
-        logger.info(f'[bold]Created config file: [green]{config_filepath}[/]')
     
     # scaden predict
     if a.predict:
