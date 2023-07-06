@@ -213,7 +213,7 @@ class Scaden(object):
             logger.error(
                 "Could not load training data file! Is it a .h5ad file generated with `scaden process`?"
             )
-            sys.exit()
+            sys.exit(1)
 
         # Subset dataset if --train_datasets is given
         if len(datasets) > 0:
@@ -251,7 +251,15 @@ class Scaden(object):
         :return: Dataset object
         """
         # Load data
-        data = pd.read_table(input_path, sep="\t", index_col=0)
+        try:
+            data = pd.read_table(input_path, sep="\t", index_col=0)
+        except:
+            try:
+                data = read_h5ad(input_path).to_df()
+            except:
+                logger.error('Unsupported file format. The prediction file must be a text file or a h5ad file.')
+                sys.exit(1)
+        
         sample_names = list(data.columns)
 
         # check for duplicates
@@ -262,7 +270,18 @@ class Scaden(object):
             )
             data = data.loc[~data.index.duplicated(keep="first")]
 
-        data = data.loc[sig_genes]
+        try:
+            data = data.loc[sig_genes] # sig_genes: from training data set
+        except KeyError:
+            logger.warn('Genes in the prediction file do not match the genes that the model was trained on. Filling in the missing genes with zeroes.')
+            
+            sig_genes_ind = pd.Index(sig_genes)
+            available = sig_genes_ind[sig_genes_ind.isin(data.index)]
+            missing = sig_genes_ind[~sig_genes_ind.isin(data.index)]
+            
+            zeros_df = pd.DataFrame(np.zeros(shape=(len(missing), len(data.columns))), index=missing, columns=data.columns)
+            data = pd.concat([data.loc[available], zeros_df])
+        
         data = data.T
         
         # Scaling
