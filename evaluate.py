@@ -7,20 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Determine whether a pd.Series has no NA values. # If an NA value is found, return false
-def df_no_na(series):
-    isna = pd.isna(series)
-    for n in isna:
-        if n == True:
-            return False
-    return True
-
-
-# Remove rows containing at least one NA value from a data frame.
-def get_non_na_rows(df):
-    return df[df.apply(df_no_na, axis=1)]
-
-
 # Calculate correlation coefficient between each column of both data frames
 def correlation_matrix(pred, actual):
     pred_mat = pred.to_numpy()
@@ -79,7 +65,14 @@ def corr_max_abs_table(corr_mat, pred, actual):
     return table
 
 
-# When calculating the correlations, first remove the NA values corresponding samples and figure out the index first (c.csv)
+def corr_match_table(corr_mat, pred, actual):
+    # Table of the correlations of predicted proportions vs ground truth proportions for each cell type
+    correlations = [corr_mat.at[celltype, celltype] for celltype in actual.columns]
+    mse = [mean_squared_error(pred[celltype], actual[celltype]) for celltype in actual.columns]
+    table = pd.DataFrame({'Correlation coefficient': correlations, 'Mean squared error': mse}, index=actual.columns)
+    return table
+
+
 def evaluate(predictions_filename, ground_truth_filename, report_filepath, training_time):
     actual = pd.read_table(ground_truth_filename, index_col=0)
     actual.sort_index(axis=1, inplace=True)
@@ -91,15 +84,19 @@ def evaluate(predictions_filename, ground_truth_filename, report_filepath, train
     actualsum = actual.apply(np.sum, axis=1)
     actual = actual / np.array([[n]*len(actual.columns) for n in actualsum])
     
-    pred = get_non_na_rows(pred)
+    pred = pred.dropna()
     actual = actual.loc[pred.index]
     
     logger.info("Evaluating predictions ...")
     corr_mat = correlation_matrix(pred=pred, actual=actual)
-    corr_mat_max = corr_max_table(corr_mat=corr_mat, pred=pred, actual=actual)
-    #corr_mat_max_abs = corr_max_abs_table(corr_mat=corr_mat, pred=pred, actual=actual)
     
-    results = {"training_time": training_time, "results": corr_mat_max.to_dict()}
+    # Get correlations between same celltype names if there are matches
+    if sum(actual.columns.isin(pred.columns)) > 0:
+        corr_table = corr_match_table(corr_mat=corr_mat, pred=pred, actual=actual)
+    else:
+        corr_table = corr_max_table(corr_mat=corr_mat, pred=pred, actual=actual)
+    
+    results = {"training_time": training_time, "results": corr_table.to_dict()}
     
     with open(report_filepath, 'w', encoding='utf-8') as report_file:
         json.dump(results, report_file, ensure_ascii=False, indent=4)
