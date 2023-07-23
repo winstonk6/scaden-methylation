@@ -2,7 +2,7 @@ from bulk_simulator import BulkSimulator
 
 """
 Simulation of artificial bulk RNA-seq samples from scRNA-seq data
-and subsequenbt formatting in .h5ad file for training with Scaden
+and subsequent formatting in .h5ad file for training with Scaden
 """
 
 
