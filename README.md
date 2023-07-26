@@ -21,6 +21,7 @@ The pipeline has 5 steps:
 ## Requirements
 - Python 3
 - Install required python packages using `python -m pip install -r requirements.txt` or `conda install --file requirements.txt`
+- Follow the instructions [here](https://www.tensorflow.org/install/pip) to install TensorFlow.
 
 ## Usage
 An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb`.

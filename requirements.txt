@@ -1,7 +1,6 @@
 pandas
 numpy
 scikit-learn
-tensorflow>=2.0
 anndata
 click
 h5py
