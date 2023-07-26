@@ -17,12 +17,7 @@ repeats = args.repeats
 outname = args.outname
 
 # Read basis matrix
-if filename[-3:] == 'csv':
-    sig = pd.read_csv(filename, index_col=0)
-elif filename[-3:] == 'tsv':
-    sig = pd.read_csv(filename, index_col=0, sep='\t')
-else:
-    sig = pd.read_table(filename, index_col=0)
+sig = pd.read_table(filename, index_col=0)
 
 # Simulate single cell data by sampling binomial distribution
 counts = np.empty(shape=(sig.shape[0], repeats*sig.shape[1]), dtype=np.int8)
