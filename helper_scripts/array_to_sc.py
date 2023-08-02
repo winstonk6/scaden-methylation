@@ -18,6 +18,12 @@ outname = args.outname
 
 # Read basis matrix
 sig = pd.read_table(filename, index_col=0)
+if len(sig.columns) == 0:
+    test = sig.index[0]
+    for sep in ['\t', ',', ' ', ';']:
+        if len(test.split(sep)) > 1:
+            sig = pd.read_csv(filename, index_col=0, sep=sep)
+            break
 
 # Simulate single cell data by sampling binomial distribution
 counts = np.empty(shape=(sig.shape[0], repeats*sig.shape[1]), dtype=np.int8)
