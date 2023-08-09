@@ -42,6 +42,10 @@ class BulkSimulator:
 
         seed: {None, int}, default = None
             Seed to initialize the random number generator.
+        
+        div_notna: bool, default = False
+            Aggregate the samples by getting the average of all non-NA values. 
+            Useful when the single-cell dataset has many NA values.
 
     """
 
@@ -54,6 +58,7 @@ class BulkSimulator:
             pattern: str = '*_counts.txt',
             unknown_celltypes: list | None = None,
             fmt: str = 'txt',
+            div_notna: bool = False,
             seed: str | None = None
     ):
 
@@ -70,6 +75,7 @@ class BulkSimulator:
         self.datasets = []
         self.dataset_files = []
         self.rng = np.random.default_rng(seed)
+        self.div_notna = div_notna
 
     def simulate(self) -> None:
         """ Simulate artificial bulk datasets """
@@ -225,7 +231,7 @@ class BulkSimulator:
 
         # Create simulated samples
         sim_x, sim_y = self.create_subsample_dataset(
-            data_x, data_y, celltypes=celltypes
+            data_x, data_y, celltypes, self.div_notna
         )
         sim_x.sort_index(axis=1, inplace=True)
         sim_y['ds'] = pd.Series(np.repeat(dataset, sim_y.shape[0]), index=sim_y.index)
@@ -240,7 +246,7 @@ class BulkSimulator:
 
         ann_data.write(os.path.join(self.out_dir, dataset + '.h5ad'))
 
-    def create_subsample_dataset(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series) -> \
+    def create_subsample_dataset(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, div_notna: bool = False) -> \
             tuple[pd.DataFrame, pd.DataFrame]:
         """
         For one dataset, generate many artificial bulk samples with known fractions.
@@ -256,6 +262,9 @@ class BulkSimulator:
             celltypes: list
                 All celltypes in the celltypes file
 
+            div_notna: bool, default = False
+                Aggregate the samples by getting the average of all non-NA values. 
+        
         Returns
             sim_x: pandas.DataFrame
                 Simulated counts
@@ -282,14 +291,14 @@ class BulkSimulator:
             # Create normal samples
             for i in range(self.num_samples):
                 progress_bar.update(normal_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna)
                 sim_y.append(label)
                 sim_x[i, :] = sample
 
             # Create sparse samples
             for i in range(self.num_samples):
                 progress_bar.update(sparse_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes, sparse=True)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna, sparse=True)
                 # sim_x.append(sample)
                 sim_y.append(label)
                 sim_x[self.num_samples + i, :] = sample
@@ -298,7 +307,7 @@ class BulkSimulator:
         sim_y = pd.concat(sim_y, axis=1).T
         return sim_x, sim_y
 
-    def create_subsample(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, sparse: bool = False) \
+    def create_subsample(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, sparse: bool = False, div_notna: bool = False) \
             -> tuple[np.ndarray, pd.Series]:
         """
         Generate one bulk sample with random fractions of celltypes.
@@ -316,6 +325,9 @@ class BulkSimulator:
 
             sparse: bool, default = False
                 Create sparse samples
+            
+            div_notna: bool, default = False
+                Aggregate the samples by getting the average of all non-NA values. 
 
         Returns
             df_samp:
@@ -356,7 +368,13 @@ class BulkSimulator:
             start_row += celltype_count[n]  # add to counter
 
         # Aggregate counts
-        df_samp = np.nansum(simulated_sample, axis=0)
+        if div_notna:
+            # Divide by the total number of non-na values
+            notna = ~np.isnan(simulated_sample)
+            df_samp = np.nansum(simulated_sample, axis=0) / notna.sum(axis=0)
+        
+        else:
+            df_samp = np.nansum(simulated_sample, axis=0)
 
         return df_samp, fracs_complete
 

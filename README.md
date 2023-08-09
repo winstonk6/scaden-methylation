@@ -105,7 +105,8 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
                              done. Options: None (No scaling), log /
                              log_min_max (log2, then scale to the range 0,1),
                              frac / fraction (Divide values by the number of
-                             cells)  [default: fraction]
+                             cells), frac_notna (Divide values by the number
+                             of non-NA values)  [default: fraction]
 ```
 
 **Train**

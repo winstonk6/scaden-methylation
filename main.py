@@ -63,7 +63,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
               help='Change scaling option for preprocessing the training data. If something other than the provided '
                    'options is used, then no scaling will be done. '
                    'Options: None (No scaling), log / log_min_max (log2, then scale to the range 0,1), '
-                   'frac / fraction (Divide values by the number of cells)')
+                   'frac / fraction (Divide values by the number of cells), frac_notna (Divide values by the number of'
+                   ' non-NA values. This must be used with the simulation step and cannot be done by preprocessing '
+                   'separately)')
 # scaden train
 @click.option('--train_datasets', default='',
               help='Comma-separated list of datasets used for training. Uses all by default.')
@@ -136,6 +138,18 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
             'At least one of the following flags must be provided: all, simulate, process, train, predict, evaluate')
         sys.exit(1)
 
+    if a.scaling == 'frac_notna':
+        a.div_notna = True
+        a.scaling = 'None'
+    else:
+        a.div_notna = False
+    
+    scaling_methods = ['None', 'log,' 'log_min_max', 'frac', 'fraction', 'frac_notna']
+    if a.scaling not in scaling_methods:
+        logger.warning(f'Scaling method {a.scaling} not recognized. Defaulting to no scaling.')
+    if a.prediction_scaling not in scaling_methods:
+        logger.warning(f'Prediction scaling method {a.prediction_scaling} not recognized. Defaulting to no scaling.')
+
     if a.verify:
         logger.info('[green]All parameters are valid.[/]')
         sys.exit()
@@ -196,7 +210,8 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
             unknown_celltypes=a.unknown,
             out_prefix=a.prefix,
             fmt=a.data_format,
-            seed=a.seed
+            div_notna=a.div_notna,
+            seed=a.seed,
         )
 
     # scaden process
