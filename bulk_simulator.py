@@ -97,11 +97,12 @@ class BulkSimulator:
 
         logger.info('Datasets: [cyan]' + str(self.datasets) + '[/]')
 
-        # Loop over datasets and simulate bulk data
-        for dataset in self.datasets:
-            gc.collect()
-            logger.info(f'[bold u]Simulating data from {dataset}')
-            self.simulate_dataset(dataset)
+        with np.errstate(invalid = 'ignore'):
+            # Loop over datasets and simulate bulk data
+            for dataset in self.datasets:
+                gc.collect()
+                logger.info(f'[bold u]Simulating data from {dataset}')
+                self.simulate_dataset(dataset)
 
         logger.info('[bold green]Finished data simulation!')
 
@@ -291,15 +292,14 @@ class BulkSimulator:
             # Create normal samples
             for i in range(self.num_samples):
                 progress_bar.update(normal_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna = div_notna)
                 sim_y.append(label)
                 sim_x[i, :] = sample
 
             # Create sparse samples
             for i in range(self.num_samples):
                 progress_bar.update(sparse_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna, sparse=True)
-                # sim_x.append(sample)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, sparse = True, div_notna = div_notna)
                 sim_y.append(label)
                 sim_x[self.num_samples + i, :] = sample
 
@@ -372,10 +372,11 @@ class BulkSimulator:
             # Divide by the total number of non-na values
             notna = ~np.isnan(simulated_sample)
             df_samp = np.nansum(simulated_sample, axis=0) / notna.sum(axis=0)
-        
         else:
             df_samp = np.nansum(simulated_sample, axis=0)
 
+        df_samp[np.isnan(df_samp)] = 0
+        
         return df_samp, fracs_complete
 
     def create_fractions(self, num_celltypes: int) -> np.ndarray:

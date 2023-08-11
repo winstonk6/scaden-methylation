@@ -172,7 +172,6 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
 
     if a.scaling == 'frac_notna':
         a.div_notna = True
-        a.scaling = 'None'
     else:
         a.div_notna = False
     

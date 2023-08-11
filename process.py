@@ -32,7 +32,10 @@ def get_signature_genes(testing_data, sig_genes_complete, var_cutoff=0.1):
     :param sig_genes_complete:
     :return: new sig_genes
     """
-    data = pd.read_table(testing_data, index_col=0)
+    try:
+        data = pd.read_table(testing_data, index_col=0)
+    except UnicodeDecodeError:
+        data = read_h5ad(testing_data).to_df()
     keep = data.var(axis=1) > var_cutoff
     data = data.loc[keep]
     available_genes = list(data.index)
