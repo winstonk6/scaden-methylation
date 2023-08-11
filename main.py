@@ -102,6 +102,7 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     from types import SimpleNamespace
     a = SimpleNamespace(**locals())
 
+    errors = False
     # Overwrite args with yaml file if provided
     if load:
         import yaml
@@ -112,8 +113,8 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
             if p in param_names:
                 setattr(a, p, params[p])
             else:
+                errors = True
                 logger.error(f"Unknown key '{p}' in YAML file. Keys name must be the same as the long form parameters.")
-                sys.exit(1)
 
     # Parameter validation
     param_errors = {}
@@ -128,21 +129,15 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
                 param_errors[n] = getattr(a, n)
 
     if len(param_errors) > 0:
+        errors = True
         logger.error('Some parameter directories/files or their parent directories do not exist:')
         for n in param_errors.keys():
             logger.error(f"\t'{n}':\t{param_errors[n]}")
-        sys.exit(1)
 
     if sum([a.all, a.simulate, a.process, a.train, a.predict, a.evaluate]) == 0:
+        errors = True
         logger.error(
             'At least one of the following flags must be provided: all, simulate, process, train, predict, evaluate')
-        sys.exit(1)
-
-    if a.scaling == 'frac_notna':
-        a.div_notna = True
-        a.scaling = 'None'
-    else:
-        a.div_notna = False
     
     scaling_methods = ['None', 'log,' 'log_min_max', 'frac', 'fraction', 'frac_notna']
     if a.scaling not in scaling_methods:
@@ -150,9 +145,12 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     if a.prediction_scaling not in scaling_methods:
         logger.warning(f'Prediction scaling method {a.prediction_scaling} not recognized. Defaulting to no scaling.')
 
+    if errors:
+        sys.exit(1)
+    
     if a.verify:
         logger.info('[green]All parameters are valid.[/]')
-        sys.exit()
+        sys.exit(0)
 
     # Create paths if not specified by user
     if a.training_data is None:
@@ -164,6 +162,7 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     if a.prediction_outname is None:
         a.prediction_outname = Path(a.out) / 'scaden_predictions.txt'
 
+    # Handle other params
     if a.all:
         a.simulate = True
         a.process = True
@@ -171,6 +170,12 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
         a.predict = True
         a.evaluate = True
 
+    if a.scaling == 'frac_notna':
+        a.div_notna = True
+        a.scaling = 'None'
+    else:
+        a.div_notna = False
+    
     if a.log_params:
         # Create config.json file
         config_filepath = Path(a.out) / f'config_{a.config}.json'
