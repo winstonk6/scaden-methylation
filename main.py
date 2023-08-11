@@ -141,9 +141,9 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     
     scaling_methods = ['None', 'log,' 'log_min_max', 'frac', 'fraction', 'frac_notna']
     if a.scaling not in scaling_methods:
-        logger.warning(f'Scaling method {a.scaling} not recognized. Defaulting to no scaling.')
+        logger.warning(f"Scaling method '{a.scaling}' not recognized. Defaulting to no scaling.")
     if a.prediction_scaling not in scaling_methods:
-        logger.warning(f'Prediction scaling method {a.prediction_scaling} not recognized. Defaulting to no scaling.')
+        logger.warning(f"Prediction scaling method '{a.prediction_scaling}' not recognized. Defaulting to no scaling.")
 
     if errors:
         sys.exit(1)
