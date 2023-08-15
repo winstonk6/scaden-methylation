@@ -63,14 +63,12 @@ def preprocess_h5ad_data(training_data, processed_path, num_cells, scaling, sig_
     logger.info("Subsetting genes ...")
     training = training[:, sig_genes]
 
-    # CHANGE: add scaling option fraction which converts counts to fractions
     logger.info("Scaling using " + str(scaling))
     if scaling == "log" or scaling == "log_min_max":
         training.X = sample_scaling(training.X, scaling)
-    elif scaling == "frac" or scaling == "fraction":
+    elif scaling == "frac" or scaling == "fraction":  # frac_notna scaling done in bulk_simulator
         training.X = training.X / num_cells
-    
-    # CHANGE: sort training data ground truth table columns
+
     training.obs.sort_index(axis=1, inplace=True)
 
     logger.info("Writing to disk ...")

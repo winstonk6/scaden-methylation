@@ -15,6 +15,7 @@ logger.addHandler(
         console=rich.console.Console(file=sys.stderr),
         show_time=False,
         markup=True,
+        show_path=False
     )
 )
 
