@@ -3,6 +3,7 @@ import glob
 import os
 import sys
 import gc
+import warnings
 
 import pandas as pd
 import anndata as ad
@@ -97,7 +98,7 @@ class BulkSimulator:
 
         logger.info('Datasets: [cyan]' + str(self.datasets) + '[/]')
 
-        with np.errstate(invalid = 'ignore'):
+        with np.errstate(invalid='ignore'):
             # Loop over datasets and simulate bulk data
             for dataset in self.datasets:
                 gc.collect()
@@ -237,17 +238,20 @@ class BulkSimulator:
         sim_x.sort_index(axis=1, inplace=True)
         sim_y['ds'] = pd.Series(np.repeat(dataset, sim_y.shape[0]), index=sim_y.index, dtype="category")
 
-        ann_data = ad.AnnData(
-            X = sim_x.to_numpy(),
-            obs = sim_y.reindex(sim_y.index.astype(str)),
-            var = pd.DataFrame(columns=[], index=list(sim_x)),
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            ann_data = ad.AnnData(
+                X=sim_x.to_numpy(),
+                obs=sim_y,
+                var=pd.DataFrame(columns=[], index=list(sim_x)),
+            )
         ann_data.uns['unknown'] = self.unknown_celltypes
         ann_data.uns['cell_types'] = celltypes.tolist()
 
         ann_data.write(os.path.join(self.out_dir, dataset + '.h5ad'))
 
-    def create_subsample_dataset(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, div_notna: bool = False) -> \
+    def create_subsample_dataset(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series,
+                                 div_notna: bool = False) -> \
             tuple[pd.DataFrame, pd.DataFrame]:
         """
         For one dataset, generate many artificial bulk samples with known fractions.
@@ -292,14 +296,14 @@ class BulkSimulator:
             # Create normal samples
             for i in range(self.num_samples):
                 progress_bar.update(normal_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna = div_notna)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, div_notna=div_notna)
                 sim_y.append(label)
                 sim_x[i, :] = sample
 
             # Create sparse samples
             for i in range(self.num_samples):
                 progress_bar.update(sparse_samples_progress, advance=1, samples=i + 1)
-                sample, label = self.create_subsample(data_x, data_y, celltypes, sparse = True, div_notna = div_notna)
+                sample, label = self.create_subsample(data_x, data_y, celltypes, sparse=True, div_notna=div_notna)
                 sim_y.append(label)
                 sim_x[self.num_samples + i, :] = sample
 
@@ -307,7 +311,8 @@ class BulkSimulator:
         sim_y = pd.concat(sim_y, axis=1).T
         return sim_x, sim_y
 
-    def create_subsample(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, sparse: bool = False, div_notna: bool = False) \
+    def create_subsample(self, data_x: pd.DataFrame, data_y: pd.DataFrame, celltypes: pd.Series, sparse: bool = False,
+                         div_notna: bool = False) \
             -> tuple[np.ndarray, pd.Series]:
         """
         Generate one bulk sample with random fractions of celltypes.
@@ -376,7 +381,7 @@ class BulkSimulator:
             df_samp = np.nansum(simulated_sample, axis=0)
 
         df_samp[np.isnan(df_samp)] = 0
-        
+
         return df_samp, fracs_complete
 
     def create_fractions(self, num_celltypes: int) -> np.ndarray:
@@ -417,12 +422,11 @@ class BulkSimulator:
         logger.info(f'Merging datasets: {files} into [bold cyan]{out_name}')
 
         if len(files) == 1:
-            os.rename(files[0], os.path.join(data_dir, out_name))
-        
+            os.replace(files[0], os.path.join(data_dir, out_name))
+
         else:
             datasets = [ad.read_h5ad(f) for f in files]
-            
-            import warnings
+
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 adata = ad.concat(datasets, uns_merge='same')
