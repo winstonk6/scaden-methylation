@@ -235,12 +235,12 @@ class BulkSimulator:
             data_x, data_y, celltypes, self.div_notna
         )
         sim_x.sort_index(axis=1, inplace=True)
-        sim_y['ds'] = pd.Series(np.repeat(dataset, sim_y.shape[0]), index=sim_y.index)
+        sim_y['ds'] = pd.Series(np.repeat(dataset, sim_y.shape[0]), index=sim_y.index, dtype="category")
 
         ann_data = ad.AnnData(
-            X=sim_x.to_numpy(),
-            obs=sim_y,
-            var=pd.DataFrame(columns=[], index=list(sim_x)),
+            X = sim_x.to_numpy(),
+            obs = sim_y.reindex(sim_y.index.astype(str)),
+            var = pd.DataFrame(columns=[], index=list(sim_x)),
         )
         ann_data.uns['unknown'] = self.unknown_celltypes
         ann_data.uns['cell_types'] = celltypes.tolist()
@@ -416,18 +416,24 @@ class BulkSimulator:
 
         logger.info(f'Merging datasets: {files} into [bold cyan]{out_name}')
 
-        # load first file
-        adata = ad.read_h5ad(files[0])
+        if len(files) == 1:
+            os.rename(files[0], os.path.join(data_dir, out_name))
+        
+        else:
+            datasets = [ad.read_h5ad(f) for f in files]
+            
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                adata = ad.concat(datasets, uns_merge='same')
 
-        for i in range(1, len(files)):
-            adata = adata.concatenate(ad.read_h5ad(files[i]), uns_merge='same')
+            combined_celltypes = list(adata.obs.columns)
+            combined_celltypes = [
+                x for x in combined_celltypes if x not in non_celltype_obs
+            ]
+            for ct in combined_celltypes:
+                adata.obs[ct].fillna(0, inplace=True)
 
-        combined_celltypes = list(adata.obs.columns)
-        combined_celltypes = [
-            x for x in combined_celltypes if x not in non_celltype_obs
-        ]
-        for ct in combined_celltypes:
-            adata.obs[ct].fillna(0, inplace=True)
-
-        adata.uns['cell_types'] = combined_celltypes
-        adata.write(os.path.join(data_dir, out_name))
+            adata.uns['cell_types'] = combined_celltypes
+            adata.obs_names = pd.Index(np.arange(len(adata.obs_names)).astype(str))  # Make row index unique
+            adata.write(os.path.join(data_dir, out_name))
