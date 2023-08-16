@@ -1,13 +1,13 @@
 	0
-0	Mono
+0	Bas
 1	Bmem
-2	Neu
-3	EOS
+2	Bn
+3	CD4mem
 4	CD4nv
 5	Tem
-6	NK
-7	Tn
-8	Bas
-9	CD4mem
-10	Treg
-11	Bn
+6	Tn
+7	EOS
+8	Mono
+9	Neu
+10	NK
+11	Treg

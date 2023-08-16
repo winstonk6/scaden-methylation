@@ -5,11 +5,10 @@ Deep learning based cell composition analysis with Scaden using methylation data
 [Scaden](https://github.com/KevinMenden/scaden) (made by Menden et al.) is a deep learning based tool that predicts the cell type proportions of tissues from RNA-seq by  training on a separate scRNA-seq dataset.
 
 Scaden-methylation modifies the original scaden in a few ways:
-- Uses methylation data rather than RNA-seq data.
-- Can combine all the scaden commands (simulate, process, train, predict) into one program to simplify the process of going through the entire pipeline.
-- Saves the training loss values.
-- Adds the option of evaluating the performance of the trained model by calculating the Pearson correlation coefficients with the ground truth proportions.
-- Outputs a json file that logs the model hyperparameters and performance.
+- Can work with methylation data in addition to RNA-seq data.
+- Combines all the scaden commands (simulate, process, train, predict) into one command to simplify the pipeline.
+- Adds the option of evaluating the performance of the trained model by calculating correlations and MSE with the ground truth proportions.
+- Adds and simplifies logging of parameters, performance, etc.
 
 The pipeline has 5 steps:
 1. Simulate training data
@@ -24,31 +23,104 @@ The pipeline has 5 steps:
 - Follow the instructions [here](https://www.tensorflow.org/install/pip) to install TensorFlow.
 
 ## Usage
-An example can be found in the Jupyter Notebook `scaden_pipeline_example.ipynb`.
+See the Jupyter Notebook [scaden_pipeline_example.ipynb](scaden_pipeline_example.ipynb) for a more detailed explanation and example.
 
-To start the pipeline, you need a scMethyl-seq dataset and a methylation array that you want to perform deconvolution on. If you have a scMethyl-seq dataset, it must be formatted as explained [here](https://scaden.readthedocs.io/en/latest/usage.html#scrna-seq-data-processing).
-You can also use a methylation array to simulate a scMethyl-seq dataset with the proper formatting using the script `array_to_sc.py`.
-```
-usage: array_to_sc [-h] [-r REPEATS] [-o OUTNAME] [-s SEED] filename
+### TL;DR:
+1. Find or make a single-cell dataset to use as a reference for training a model.
 
-Converts methylation array to a simulated scMethyl-seq dataset.
+2. Find a dataset of bulk samples to perform deconvolution on. This should be a text or h5ad file with rows as genes and samples as columns.
 
-positional arguments:
-  filename                        Methylation array text file
+3. Make a YAML file with the necessary parameters for your task.
 
-optional arguments:
-  -r, --repeats INTEGER           Number of times each beta value is 
-                                  sampled from a binomial distribution.
-  -o, --outname TEXT              Set the name and location of the outputs, 
-                                  e.g., "./data" will create the files 
-                                  "./data_counts.txt" and "./data_celltypes.txt"
-  -s, --seed INTEGER              Numpy random generator seed
-```
+4. Run `python main.py -load params.yaml` 
 
-Once you have the necessary files, run `main.py` to go through the scaden pipeline and provide the necessary arguments in a YAML file or as command line arguments. Using a YAML file is recommended, since each step has its own set of parameters and the invocation can be quite long.
+You can also add arguments through the command line, e.g., `python main.py -simulate --cells 100 ...`
 
-To run each step of the pipeline, add the appropriate flag(s) on the command line (e.g., `-simulate`) or in the YAML file (`simulate: True`). You can also run all steps using the `all` flag. At least one 
+### Single-cell dataset
+The single cell dataset should be split into two files in the same directory:
+  - One file should end in "`_celltypes.txt`". This file will have one column called "Celltype" with the celltype labels for each cell.
+    ```
+    Celltype
+    type1
+    type2
+    type9
+    type4
+    ```
+  - The other file should end in "`_counts.txt`" and have the table of methylation values.
+    ```
+        cpg1    cpg2    cpg100  cpg230
+    0    0.0     1.0     0.5     0.0
+    1    1.0     0.25    0.0     0.0
+    2    0.0     0.0     1.0     0.0
+    3    0.75    0.125   0.2     1.0
+    ```
+Both files should have the same prefix (e.g., `neuron_celltypes.txt` and `neuron_counts.txt`)
 
+### Example YAML files:
+  - Use a trained model to make predictions:
+    ```
+    predict: True
+    seed: 100
+
+    # Directory containing the trained model
+    model_dir: /mnt/home/wkoh1/ceph/scaden/basis2/configs/new/model/
+
+    # Dataset to do deconvolution, with cpgs as rows and samples as columns
+    pred: /mnt/ceph/users/wkoh1/scaden/Scaden_testset/GSE182379/m.csv
+
+    # Scaling to apply to the dataset values. 
+    # Options: None, log, frac (log: log2 then scale to the range [0,1], frac: divide by some number N, requires the line below to be uncommented) 
+    prediction_scaling: None
+    #cells: N
+
+    # Name of the output file
+    prediction_outname: /mnt/home/wkoh1/ceph/scaden_predictions.tsv
+    ```
+  
+  - Train a model:
+    ```
+    simulate: True
+    process: True
+    train: True
+    seed: 100
+
+    # Simulation parameters
+    # Directory where the single cell dataset files (*_counts.txt and *_celltypes.txt) are located
+    data: /mnt/home/wkoh1/ceph/GSE130711/scaden/original/
+
+    # Number of samples to simulate in the dataset
+    n_samples: 10
+
+    # Number of cells per simulated sample
+    cells: 10
+
+    # Directory to store the output files
+    out: /mnt/home/wkoh1/ceph/scaden/scaden_example/
+
+    # Optional: name of the file containing the training data. This file be stored in the out directory.
+    prefix: training
+
+    # Bulk data file (or testing set) that we want to perform deconvolution on. 
+    pred: /mnt/home/wkoh1/ceph/GSE130711/scaden/original/test_data.tsv
+
+    # Scaling to apply to the training dataset values. 
+    # Options: None, log, frac, frac_notna
+    scaling: frac
+
+    # Remove cpgs from the training data that have a variance below this cutoff. Use 0 to keep all cpgs.
+    var_cutoff: 0
+
+    # Directory to store the model files
+    model_dir: /mnt/home/wkoh1/ceph/scaden/scaden_example/model/
+
+    # Model hyperparameters
+    batch_size: 256
+    learning_rate: 0.0001
+    steps: 10
+    ```
+
+
+# All Options
 **Pipeline controls and logging**
 ```
   -load TEXT                 YAML file from which parameters are loaded
@@ -138,55 +210,3 @@ To run each step of the pipeline, add the appropriate flag(s) on the command lin
                              proportions
 ```
 
-## Examples
-Using a YAML file:
-`python main.py -load params.yaml`
-
-`params.yaml` file:
-```
-data: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/
-out: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/
-model_dir: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/model/
-pred: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_bulk_data.txt
-ground_truth: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_actual.txt
-prediction_outname: ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_predictions.txt
-scaling: frac
-prediction_scaling: None
-var_cutoff: 0
-seed: 42
-cells: 200
-n_samples: 2000
-steps: 6000
-batch_size: 256
-learning_rate: 0.0001
-config: 42_c200_n2000_s6000_b256_l0.0001_r200_g0.1_c0.2
-reference: 200
-```
-
-
-Example invocation using command line (with line breaks):
-```
-python main.py \
---data ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/ \
---out ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/ \
---model_dir ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/model/ \
---pred ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_bulk_data.txt \
---ground_truth ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_actual.txt \
---prediction_outname ~/ceph/scaden/simulated_basis_test/g0.1_c0.2/test_predictions.txt \
---scaling frac \
---prediction_scaling None \
---var_cutoff 0 \
---seed 42 \
---cells 200 \
---n_samples 2000 \
---steps 6000 \
---batch_size 256 \
---learning_rate 0.0001 \
---config 42_c200_n2000_s6000_b256_l0.0001_r200_g0.1_c0.2 \
---reference 200
-```
-
-Running one command at a time:
-```
-python main.py -load params.yaml
-```
