@@ -19,10 +19,14 @@ if data.is_dir():
     files = [file for file in data.iterdir() if not file.is_dir()]
     if len(files) == 0:
         raise ValueError(f"'{data}' does not have any files")
+    else:
+        print(f"Using directory '{args.data}'")
 elif '*' in str(data) or '?' in str(data) or '[' in str(data) or ']' in str(data):
     files = [Path(file) for file in glob.glob(str(data)) if not Path(file).is_dir()]
     if len(files) == 0:
         raise ValueError(f"No files match the pattern '{data}'")
+    else:
+        print(f"Using pattern '{args.data}'")
 else:
     raise ValueError(f"'{data}' is not a directory or a Unix file pattern")
 
@@ -46,3 +50,5 @@ elif args.format == 'csv':
     df.to_csv(args.outfile)
 elif args.format == 'h5ad':
     ad.AnnData(df).write(args.outfile)
+
+print(f"Created file '{args.outfile}'")
