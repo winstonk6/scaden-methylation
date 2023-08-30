@@ -2,7 +2,6 @@
 import click
 import sys
 import os
-import json
 import logging
 import rich.logging
 from pathlib import Path
@@ -149,10 +148,14 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     if errors:
         sys.exit(1)
     
-    if a.verify:
-        logger.info('[green]All parameters are valid.[/]')
-        sys.exit(0)
-
+    # Handle other params
+    if a.all:
+        a.simulate = True
+        a.process = True
+        a.train = True
+        a.predict = True
+        a.evaluate = True
+    
     # Create paths if not specified by user
     if a.training_data is None:
         a.training_data = Path(a.out) / (a.prefix + '.h5ad')  # h5ad file generated from scaden simulate
@@ -163,13 +166,33 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
     if a.prediction_outname is None:
         a.prediction_outname = Path(a.out) / 'scaden_predictions.txt'
 
-    # Handle other params
-    if a.all:
-        a.simulate = True
-        a.process = True
-        a.train = True
-        a.predict = True
-        a.evaluate = True
+    if a.verify:
+        logger.info('[green]All parameters are valid.[/]')
+        if a.simulate:
+            logger.info('[bold]Training data simulation parameters:[/]')
+            logger.info(f'\tSingle-cell data directory: {a.data}')
+            logger.info(f'\tOut directory: {a.out}')
+            logger.info(f'\tNumber of samples: {a.n_samples}')
+            logger.info(f'\tCells per sample: {a.cells}')
+            logger.info(f'\tSimulation output: {a.training_data}')
+        if a.process:
+            logger.info('[bold]Preprocessing parameters:[/]')
+            logger.info(f'\tBulk data to do deconvolution on: {a.pred}')
+            logger.info(f'\tVariance threshold: {a.var_cutoff}')
+            logger.info(f'\tScaling: "{a.scaling}"')
+            logger.info(f'\tProcessing output: {a.processed_path}')
+        if a.train:
+            logger.info('[bold]Training parameters[/]')
+            logger.info(f'\tSteps: {a.steps}')
+            logger.info(f'\tBatch size: {a.batch_size}')
+            logger.info(f'\tLearning rate: {a.learning_rate}')
+            logger.info(f'\tModel directory: {a.model_dir}')
+        if a.predict:
+            logger.info('[bold]Prediction parameters:[/]')
+            logger.info(f'\tPrediction scaling: "{a.prediction_scaling}"')
+            logger.info(f'\tBulk data to do deconvolution on: {a.pred}')
+            logger.info(f'\tPrediction output: {a.prediction_outname}')
+        sys.exit(0)
 
     if a.scaling == 'frac_notna':
         a.div_notna = True
@@ -177,6 +200,7 @@ def cli(load, verify, all, simulate, process, train, predict, evaluate,
         a.div_notna = False
     
     if a.log_params:
+        import json
         # Create config.json file
         config_filepath = Path(a.out) / f'config_{a.config}.json'
         with open(config_filepath, 'w', encoding='utf-8') as config_file:
