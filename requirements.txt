@@ -8,3 +8,4 @@ rich
 pyyaml
 seaborn
 polars
+tf-keras

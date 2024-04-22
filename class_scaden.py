@@ -6,6 +6,7 @@ import logging
 import sys
 import gc
 import tensorflow as tf
+import tf_keras as keras
 import numpy as np
 import pandas as pd
 from anndata import read_h5ad

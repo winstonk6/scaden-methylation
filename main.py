@@ -19,6 +19,7 @@ logger.addHandler(
 )
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 
 @click.command()
@@ -303,9 +304,9 @@ def main():
     text = """
      ____                _            
     / ___|  ___ __ _  __| | ___ _ __  
-    \___ \ / __/ _` |/ _` |/ _ \ '_ \ 
+    \\___ \\ / __/ _` |/ _` |/ _ \\ '_ \\ 
      ___) | (_| (_| | (_| |  __/ | | |
-    |____/ \___\__,_|\__,_|\___|_| |_|
+    |____/ \\___\\__,_|\\__,_|\\___|_| |_|
     """
     click.echo(click.style(text, fg='blue'))
     cli()
